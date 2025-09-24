@@ -1,10 +1,10 @@
-# SmartWatchVM ⌚
+# SmartWatch- VM and Lang ⌚
 
 A virtual machine that simulates the behavior of a **smartwatch**.  
 
 ---
 
-## 📌 Overview
+## Overview
 
 SmartWatchVM is a virtual machine designed to demonstrate language design and virtual machine architecture in a playful context with the goal to put in practice the concepts learned during class.
 
