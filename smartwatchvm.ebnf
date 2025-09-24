@@ -1,0 +1,70 @@
+(* =============================== *)
+(* SmartWatchVM Language Grammar   *)
+(* =============================== *)
+
+Program        = { Line } ;
+
+Line           = [ Label ] Instruction [ Comment ] NewLine ;
+
+Label          = Identifier ":" ;
+
+Instruction    = PowerOn
+               | PowerOff
+               | ShowTime
+               | SetTime
+               | SetAlarm
+               | SetTimer
+               | Notify
+               | HeartBeat
+               | Step
+               | MusicPlay
+               | MusicStop
+               | Bluetooth
+               | Halt ;
+
+(* ----- Instructions ----- *)
+
+PowerOn        = "POWERON" ;
+PowerOff       = "POWEROFF" ;
+ShowTime       = "SHOWTIME" ;
+SetTime        = "SETTIME" Time ;
+SetAlarm       = "SETALARM" Time ;
+SetTimer       = "SETTIMER" Number ;
+Notify         = "NOTIFY" QuotedText ;
+HeartBeat      = "HEARTBEAT" ;
+Step           = "STEP" ;
+MusicPlay      = "MUSICPLAY" Track ;
+MusicStop      = "MUSICSTOP" ;
+Bluetooth      = "BLUETOOTH" BluetoothState ;
+Halt           = "HALT" ;
+
+(* ----- Data Types ----- *)
+
+Time           = Hour ":" Minute ":" Second ;
+Hour           = Digit Digit ;            (* 00–23 *)
+Minute         = Digit Digit ;            (* 00–59 *)
+Second         = Digit Digit ;            (* 00–59 *)
+
+Number         = NonZeroDigit { Digit }   (* positive integer *)
+               | "0" ;
+
+Track          = Identifier ;
+
+QuotedText     = '"' { PrintableChar - '"' } '"' ;
+
+BluetoothState = "ON" | "OFF" ;
+
+(* ----- Lexical Elements ----- *)
+
+Identifier     = Letter { Letter | Digit | "_" } ;
+
+Comment        = ";" { PrintableChar } ;
+
+Digit          = "0".."9" ;
+NonZeroDigit   = "1".."9" ;
+
+Letter         = "A".."Z" | "a".."z" ;
+
+PrintableChar  = ? any printable ASCII character ? ;
+
+NewLine        = ? CR | LF | CRLF ? ;
