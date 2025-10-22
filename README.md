@@ -51,49 +51,53 @@ The instructions supported by the VM are:
 The grammar of the SmartWatchVM language is defined in [`smartwatchvm.ebnf`](smartwatchvm.ebnf).
 
 ```ebnf
-Program      = { Line } ;
+Program   = { Line } ;
 
-Line         = [ Label ] Instruction [ Comment ] ;
+Line      = [ Label ] Statement [ Comment ] ;
+Label     = Identifier ":" ;
 
-Label        = Identifier ":" ;
+Statement = Instr
+          | Assignment
+          | IfBlock
+          | WhileBlock
+          | Call
+          | Return
+          | Halt ;
 
-Instruction  = PowerOn 
-             | PowerOff 
-             | ShowTime 
-             | SetTime
-             | SetAlarm 
-             | SetTimer
-             | Notify 
-             | HeartBeat 
-             | Step 
-             | MusicPlay 
-             | MusicStop 
-             | Bluetooth
-             | Halt ;
+Instr     = "POWERON" 
+          | "POWEROFF"
+          | "SHOWTIME"
+          | "SETTIME" Time
+          | "SETALARM" Time
+          | "SETTIMER" Number
+          | "NOTIFY" QuotedText
+          | "HEARTBEAT"
+          | "STEP"
+          | "MUSICPLAY" Identifier
+          | "MUSICSTOP"
+          | "BLUETOOTH" ("ON" | "OFF")
+          ;
 
-PowerOn      = "POWERON" ;
-PowerOff     = "POWEROFF" ;
-ShowTime     = "SHOWTIME" ;
-SetTime      = "SETTIME" Time ;
-SetAlarm     = "SETALARM" Time ;
-SetTimer     = "SETTIMER" Number ;
-Notify       = "NOTIFY" QuotedText ;
-HeartBeat    = "HEARTBEAT" ;
-Step         = "STEP" ;
-MusicPlay    = "MUSICPLAY" Track ;
-MusicStop    = "MUSICSTOP" ;
-Bluetooth    = "BLUETOOTH" BluetoothState ;
-Halt         = "HALT" ;
+Assignment = Identifier "=" Expr ;
 
-Time         = Digit Digit ":" Digit Digit ":" Digit Digit ;
-Number       = Digit { Digit } ;
-Track        = Identifier ;
-QuotedText   = '"' { ANY - '"' } '"' ;
+IfBlock   = "WHEN" CondExpr "THEN" { Line } [ "ELSE" { Line } ] "ENDWHEN" ;
+WhileBlock= "LOOP" CondExpr "DO" { Line } "ENDLOOP" ;
 
-BluetoothState = "ON" | "OFF" ;
+Call      = "CALL" Identifier ;
+Return    = "RETURN" ;
+Halt      = "HALT" ;
 
-Identifier   = Letter { Letter | Digit | "_" } ;
-Digit        = "0".."9" ;
-Letter       = "A".."Z" | "a".."z" ;
+CondExpr  = Expr ( "==" | "!=" | "<" | "<=" | ">" | ">=" ) Expr ;
 
-Comment      = ";" { ANY } ;
+Expr      = Term { ("+"|"-") Term } ;
+Term      = Factor { ("*"|"/") Factor } ;
+Factor    = Number | QuotedText | Identifier | "(" Expr ")" ;
+
+Time      = Digit Digit ":" Digit Digit ":" Digit Digit ;
+Number    = Digit { Digit } ;
+QuotedText= '"' { ANY - '"' } '"' ;
+Identifier= Letter { Letter | Digit | "_" } ;
+
+Comment   = ";" { ANY } ;
+Digit     = "0".."9" ;
+Letter    = "A".."Z" | "a".."z" ;

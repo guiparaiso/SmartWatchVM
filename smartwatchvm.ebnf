@@ -2,68 +2,56 @@
 (* SmartWatchVM Language Grammar   *)
 (* =============================== *)
 
-Program        = { Line } ;
+Program   = { Line } ;
 
-Line           = [ Label ] Instruction [ Comment ] NewLine ;
+Line      = [ Label ] Statement [ Comment ] ;
+Label     = Identifier ":" ;
 
-Label          = Identifier ":" ;
+Statement = Instr
+          | Assignment
+          | IfBlock
+          | WhileBlock
+          | Call
+          | Return
+          | Halt ;
 
-Instruction    = PowerOn
-               | PowerOff
-               | ShowTime
-               | SetTime
-               | SetAlarm
-               | SetTimer
-               | Notify
-               | HeartBeat
-               | Step
-               | MusicPlay
-               | MusicStop
-               | Bluetooth
-               | Halt ;
+Instr     = "POWERON" 
+          | "POWEROFF"
+          | "SHOWTIME"
+          | "SETTIME" Time
+          | "SETALARM" Time
+          | "SETTIMER" Number
+          | "NOTIFY" QuotedText
+          | "HEARTBEAT"
+          | "STEP"
+          | "MUSICPLAY" Identifier
+          | "MUSICSTOP"
+          | "BLUETOOTH" ("ON" | "OFF")
+          ;
 
-(* ----- Instructions ----- *)
+Assignment = Identifier "=" Expr ;
 
-PowerOn        = "POWERON" ;
-PowerOff       = "POWEROFF" ;
-ShowTime       = "SHOWTIME" ;
-SetTime        = "SETTIME" Time ;
-SetAlarm       = "SETALARM" Time ;
-SetTimer       = "SETTIMER" Number ;
-Notify         = "NOTIFY" QuotedText ;
-HeartBeat      = "HEARTBEAT" ;
-Step           = "STEP" ;
-MusicPlay      = "MUSICPLAY" Track ;
-MusicStop      = "MUSICSTOP" ;
-Bluetooth      = "BLUETOOTH" BluetoothState ;
-Halt           = "HALT" ;
+IfBlock   = "WHEN" CondExpr "THEN" { Line } [ "ELSE" { Line } ] "ENDWHEN" ;
+WhileBlock= "LOOP" CondExpr "DO" { Line } "ENDLOOP" ;
 
-(* ----- Data Types ----- *)
+Call      = "CALL" Identifier ;
+Return    = "RETURN" ;
+Halt      = "HALT" ;
 
-Time           = Hour ":" Minute ":" Second ;
-Hour           = Digit Digit ;            (* 00–23 *)
-Minute         = Digit Digit ;            (* 00–59 *)
-Second         = Digit Digit ;            (* 00–59 *)
+CondExpr  = Expr ( "==" | "!=" | "<" | "<=" | ">" | ">=" ) Expr ;
 
-Number         = NonZeroDigit { Digit }   (* positive integer *)
-               | "0" ;
+Expr      = Term { ("+"|"-") Term } ;
+Term      = Factor { ("*"|"/") Factor } ;
+Factor    = Number | QuotedText | Identifier | "(" Expr ")" ;
 
-Track          = Identifier ;
+Time      = Digit Digit ":" Digit Digit ":" Digit Digit ;
+Number    = Digit { Digit } ;
+QuotedText= '"' { ANY - '"' } '"' ;
+Identifier= Letter { Letter | Digit | "_" } ;
 
-QuotedText     = '"' { PrintableChar - '"' } '"' ;
-
-BluetoothState = "ON" | "OFF" ;
-
-(* ----- Lexical Elements ----- *)
-
-Identifier     = Letter { Letter | Digit | "_" } ;
-
-Comment        = ";" { PrintableChar } ;
-
-Digit          = "0".."9" ;
-NonZeroDigit   = "1".."9" ;
-
-Letter         = "A".."Z" | "a".."z" ;
+Comment   = ";" { ANY } ;
+Digit     = "0".."9" ;
+Letter    = "A".."Z" | "a".."z" ;
 
 PrintableChar  = ? any printable ASCII character ? ;
 
