@@ -71,6 +71,7 @@ Instr     = "POWERON"
           | "SETALARM" Time
           | "SETTIMER" Number
           | "NOTIFY" QuotedText
+          | "SHOW" Expr
           | "HEARTBEAT"
           | "STEP"
           | "MUSICPLAY" Identifier
