@@ -39,7 +39,7 @@
 # define YY_YY_PARSER_H_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
-# define YYDEBUG 1
+# define YYDEBUG 0
 #endif
 #if YYDEBUG
 extern int yydebug;
@@ -54,41 +54,41 @@ extern int yydebug;
     YYEOF = 0,                     /* "end of file"  */
     YYerror = 256,                 /* error  */
     YYUNDEF = 257,                 /* "invalid token"  */
-    IDENT = 258,                   /* IDENT  */
-    STRING = 259,                  /* STRING  */
-    TIME_TOK = 260,                /* TIME_TOK  */
-    NUMBER = 261,                  /* NUMBER  */
-    POWERON = 262,                 /* POWERON  */
-    POWEROFF = 263,                /* POWEROFF  */
-    SHOWTIME = 264,                /* SHOWTIME  */
-    SETTIME = 265,                 /* SETTIME  */
-    SETALARM = 266,                /* SETALARM  */
-    SETTIMER = 267,                /* SETTIMER  */
-    NOTIFY = 268,                  /* NOTIFY  */
-    SHOW = 269,                    /* SHOW  */
-    HEARTBEAT = 270,               /* HEARTBEAT  */
-    STEP = 271,                    /* STEP  */
-    MUSICPLAY = 272,               /* MUSICPLAY  */
-    MUSICSTOP = 273,               /* MUSICSTOP  */
-    BLUETOOTH = 274,               /* BLUETOOTH  */
-    HALT = 275,                    /* HALT  */
-    WHEN = 276,                    /* WHEN  */
-    THEN = 277,                    /* THEN  */
-    ELSE = 278,                    /* ELSE  */
-    ENDWHEN = 279,                 /* ENDWHEN  */
-    LOOP = 280,                    /* LOOP  */
-    DO = 281,                      /* DO  */
-    ENDLOOP = 282,                 /* ENDLOOP  */
-    CALL = 283,                    /* CALL  */
-    RETURN = 284,                  /* RETURN  */
-    ON = 285,                      /* ON  */
-    OFF = 286,                     /* OFF  */
-    EQ = 287,                      /* EQ  */
-    NEQ = 288,                     /* NEQ  */
-    LE = 289,                      /* LE  */
-    GE = 290,                      /* GE  */
-    LT = 291,                      /* LT  */
-    GT = 292                       /* GT  */
+    EQ = 258,                      /* EQ  */
+    NEQ = 259,                     /* NEQ  */
+    LT = 260,                      /* LT  */
+    LE = 261,                      /* LE  */
+    GT = 262,                      /* GT  */
+    GE = 263,                      /* GE  */
+    IDENT = 264,                   /* IDENT  */
+    STRING = 265,                  /* STRING  */
+    TIME_TOK = 266,                /* TIME_TOK  */
+    NUMBER = 267,                  /* NUMBER  */
+    POWERON = 268,                 /* POWERON  */
+    POWEROFF = 269,                /* POWEROFF  */
+    SHOWTIME = 270,                /* SHOWTIME  */
+    SETTIME = 271,                 /* SETTIME  */
+    SETALARM = 272,                /* SETALARM  */
+    SETTIMER = 273,                /* SETTIMER  */
+    NOTIFY = 274,                  /* NOTIFY  */
+    SHOW = 275,                    /* SHOW  */
+    HEARTBEAT = 276,               /* HEARTBEAT  */
+    STEP = 277,                    /* STEP  */
+    MUSICPLAY = 278,               /* MUSICPLAY  */
+    MUSICSTOP = 279,               /* MUSICSTOP  */
+    BLUETOOTH = 280,               /* BLUETOOTH  */
+    HALT = 281,                    /* HALT  */
+    WHEN = 282,                    /* WHEN  */
+    THEN = 283,                    /* THEN  */
+    ELSE = 284,                    /* ELSE  */
+    ENDWHEN = 285,                 /* ENDWHEN  */
+    LOOP = 286,                    /* LOOP  */
+    DO = 287,                      /* DO  */
+    ENDLOOP = 288,                 /* ENDLOOP  */
+    CALL = 289,                    /* CALL  */
+    RETURN = 290,                  /* RETURN  */
+    ON = 291,                      /* ON  */
+    OFF = 292                      /* OFF  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif

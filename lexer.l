@@ -43,13 +43,43 @@ STRING \"([^\"\\]|\\.)*\"
 "OFF" { return OFF; }
 "SHOW" { return SHOW; }
 
-"==" { return EQ; }
-"!=" { return NEQ; }
-"<=" { return LE; }
-">=" { return GE; }
-"<" { return LT; }
-">" { return GT; }
-"=" { return '='; }
+
+
+
+
+{TIME} {
+  yylval.str = strdup(yytext);
+  return TIME_TOK;
+  }
+
+[-]?{DIGIT}+ {
+  yylval.num = atof(yytext);
+  printf("[LEXER] Number: %s\n", yytext);  /* debug */
+  return NUMBER;
+}
+
+
+\"([^\"\\]|\\.)*\" {
+  yylval.str = strdup(yytext);
+  return STRING;
+}
+{ID} {
+  yylval.str = strdup(yytext);
+  return IDENT;
+  }
+
+  [;#].* { /* skip comment */ }
+  {WS} { /* skip */ }
+\n { return '\n'; }  /* ao invés de skip */
+
+"=="    { printf("[LEXER] Token EQ: ==\n"); return EQ; }
+"!="    { printf("[LEXER] Token NEQ: !=\n"); return NEQ; }
+"<="    { printf("[LEXER] Token LE: <=\n"); return LE; }
+">="    { printf("[LEXER] Token GE: >=\n"); return GE; }
+"<"     { printf("[LEXER] Token LT: <\n"); return LT; }
+">"     { printf("[LEXER] Token GT: >\n"); return GT; }
+"="     { printf("[LEXER] Token EQ: =\n"); return '='; }
+
 ":" { return ':'; }
 "," { return ','; }
 "(" { return '('; }
@@ -58,30 +88,5 @@ STRING \"([^\"\\]|\\.)*\"
 "-" { return '-'; }
 "*" { return '*'; }
 "/" { return '/'; }
-
-
-{TIME} {
-  yylval.str = strdup(yytext);
-  return TIME_TOK;
-}
-
-{NUMBER} {
-  yylval.num = atof(yytext);
-  return NUMBER;
-}
-
-{STRING} {
-  yylval.str = strdup(yytext);
-  return STRING;
-}
-
-{ID} {
-  yylval.str = strdup(yytext);
-  return IDENT;
-}
-
-[;#].* { /* skip comment */ }
-{WS} { /* skip */ }
-\n { return '\n'; }  /* ao invés de skip */
 
 %%

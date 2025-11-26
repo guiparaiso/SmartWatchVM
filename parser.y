@@ -97,52 +97,81 @@ void check_sintatics() {
   char *str;
 }
 
+%token EQ NEQ LT LE GT GE
 %token <str> IDENT STRING TIME_TOK
 %token <num> NUMBER
 %token POWERON POWEROFF SHOWTIME SETTIME SETALARM SETTIMER NOTIFY SHOW
 %token HEARTBEAT STEP MUSICPLAY MUSICSTOP BLUETOOTH HALT
 %token WHEN THEN ELSE ENDWHEN LOOP DO ENDLOOP CALL RETURN
-%token ON OFF EQ NEQ LE GE LT GT
+%token ON OFF
 
 %left '+' '-'
 %left '*' '/'
 
 %%
 
-program: /* vazio */ 
-  | program statement
-  | program '\n'
+program: 
+    /* vazio */ 
+  | program line
   ;
+
+line:
+    statement
+  | '\n'
+  ;
+
 statement:
-    IDENT ':' { def_lab($1); }
+    label_def
   | instr
-  | IDENT '=' expr { def_var($1); }
-  | WHEN expr comparator expr THEN stmt_list opt_else ENDWHEN
-  | LOOP expr comparator expr DO stmt_list ENDLOOP
-  | CALL IDENT { call_lab($2); }
-  | RETURN | HALT
+  | assignment
+  | when_stmt
+  | loop_stmt
+  | call_stmt
+  | RETURN
+  | HALT
   ;
+
+label_def: IDENT ':' { def_lab($1); }
+assignment: IDENT '=' expr { def_var($1); }
+call_stmt: CALL IDENT { call_lab($2); }
+
+when_stmt: 
+    WHEN expr THEN stmt_list opt_else ENDWHEN
+  ;
+
+loop_stmt:
+    LOOP expr DO stmt_list ENDLOOP
+  ;
+
+stmt_list: 
+    /* vazio */
+  | stmt_list statement
+  | stmt_list '\n'
+  ;
+
+opt_else: 
+    /* vazio */
+  | ELSE stmt_list
+  ;
+
+comparator: EQ | NEQ | LT | LE | GT | GE ;
 
 instr:
     POWERON | POWEROFF | SHOWTIME | HEARTBEAT | STEP | MUSICSTOP
   | SETTIME TIME_TOK | SETALARM TIME_TOK | SETTIMER NUMBER
-  | NOTIFY STRING | SHOW expr | MUSICPLAY IDENT | BLUETOOTH ON | BLUETOOTH OFF
+  | NOTIFY STRING | SHOW expr | MUSICPLAY IDENT 
+  | BLUETOOTH ON | BLUETOOTH OFF
   ;
 
-stmt_list: /* vazio */ 
-    | stmt_list statement ;
-    | stmt_list '\n' ;
-
-opt_else: /* vazio */ 
-    | ELSE stmt_list ;
-    | stmt_list '\n' ;
-
-comparator: EQ | NEQ | LT | LE | GT | GE ;
-
 expr:
+    simple_expr
+  | simple_expr comparator simple_expr
+  ;
+
+simple_expr:
     term
-  | expr '+' term
-  | expr '-' term
+  | simple_expr '+' term
+  | simple_expr '-' term
   ;
 
 term:
@@ -167,10 +196,6 @@ void yyerror(const char *s) {
 int main() {
   printf("Parser Smartwatch - Análise Sintatica\n");
   printf("======================================\n\n");
-  
-//   #ifdef YYDEBUG
-//   yydebug = 1;
-//   #endif
   
   if (yyparse() == 0) {
     printf("✓ Parsing OK\n");
