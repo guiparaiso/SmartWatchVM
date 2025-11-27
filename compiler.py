@@ -107,21 +107,107 @@ class Compiler:
         
         # WHEN condition THEN
         if line.startswith('WHEN '):
-            # Implementação simplificada - pula a condição por agora
-            self.emit(OP_PUSH, 1)  # sempre verdadeiro por enquanto
+            condition = line[5:].strip()
+            if condition.endswith(' THEN'):
+                condition = condition[:-5].strip()
+            
+            print(f"  🔵 WHEN: compilando condição '{condition}'")
+            
+            # Compila a condição
+            self._compile_expression(condition)
+            
+            # Se falso, pula para ELSE ou ENDWHEN
+            # Cria label único
+            import time
+            else_label = f"__else_{int(time.time() * 1000000)}"
+            
+            # Guarda o label no contexto (usa uma pilha de contextos)
+            if not hasattr(self, 'context_stack'):
+                self.context_stack = []
+            self.context_stack.append({'else_label': else_label, 'end_label': None})
+            
+            # JZ = Jump if Zero (se condição for falsa/0)
+            self.emit_jump(OP_JZ, else_label)
+            return
+        
+        # ELSE
+        if line == 'ELSE':
+            if not hasattr(self, 'context_stack') or not self.context_stack:
+                print("❌ ELSE sem WHEN")
+                return
+            
+            context = self.context_stack[-1]
+            
+            # Cria label para fim do WHEN
+            import time
+            end_label = f"__end_{int(time.time() * 1000000)}"
+            context['end_label'] = end_label
+            
+            # Pula o ELSE (quando THEN é verdadeiro)
+            self.emit_jump(OP_JMP, end_label)
+            
+            # Define o label do ELSE
+            self.define_label(context['else_label'])
+            return
+        
+        # ENDWHEN
+        if line == 'ENDWHEN':
+            if not hasattr(self, 'context_stack') or not self.context_stack:
+                print("❌ ENDWHEN sem WHEN")
+                return
+            
+            context = self.context_stack.pop()
+            
+            # Se não teve ELSE, define o else_label aqui
+            if context['end_label'] is None:
+                self.define_label(context['else_label'])
+            else:
+                # Se teve ELSE, define o end_label
+                self.define_label(context['end_label'])
             return
         
         # LOOP condition DO
         if line.startswith('LOOP '):
-            # Implementação simplificada
-            loop_start = self.current_address()
-            self.emit(OP_PUSH, 1)  # sempre verdadeiro por enquanto
+            condition = line[5:].strip()
+            if condition.endswith(' DO'):
+                condition = condition[:-3].strip()
+            
+            print(f"  🔵 LOOP: compilando condição '{condition}'")
+            
+            # Marca o início do loop
+            import time
+            loop_start = f"__loop_start_{int(time.time() * 1000000)}"
+            loop_end = f"__loop_end_{int(time.time() * 1000000)}"
+            
+            self.define_label(loop_start)
+            
+            # Compila a condição
+            self._compile_expression(condition)
+            
+            # Se falso, sai do loop
+            self.emit_jump(OP_JZ, loop_end)
+            
+            # Guarda contexto do loop
+            if not hasattr(self, 'context_stack'):
+                self.context_stack = []
+            self.context_stack.append({'loop_start': loop_start, 'loop_end': loop_end})
             return
         
-        # ENDWHEN, ENDLOOP
-        if line in ['ENDWHEN', 'ENDLOOP']:
-            # Por enquanto não faz nada
+        # ENDLOOP
+        if line == 'ENDLOOP':
+            if not hasattr(self, 'context_stack') or not self.context_stack:
+                print("❌ ENDLOOP sem LOOP")
+                return
+            
+            context = self.context_stack.pop()
+            
+            # Volta para o início do loop
+            self.emit_jump(OP_JMP, context['loop_start'])
+            
+            # Define label de saída
+            self.define_label(context['loop_end'])
             return
+        
         
         # CALL label
         if line.startswith('CALL '):
