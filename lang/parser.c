@@ -90,6 +90,21 @@ typedef struct { char *name; int def; int call; } Lab;
 Lab *labels = NULL;
 int nlabels = 0;
 
+/* Lista de sensores suportados (readonly) */
+char *supported_sensors[] = {
+    "HEARTRATE", "STEPS", "BATTERY", "TIME_HOUR", "TIME_MINUTE", 
+    NULL
+};
+
+int is_sensor(char *name) {
+    for (int i = 0; supported_sensors[i] != NULL; i++) {
+        if (strcmp(supported_sensors[i], name) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 void def_var(char *n) {
   for (int i = 0; i < nvars; i++) 
     if (strcmp(vars[i].name, n) == 0) { vars[i].def = 1; return; }
@@ -98,6 +113,12 @@ void def_var(char *n) {
 }
 
 void use_var(char *n) {
+  // Sensores são sempre válidos e não precisam ser verificados
+  if (is_sensor(n)) {
+    return;
+  }
+  
+  // Variável normal - verificação original
   for (int i = 0; i < nvars; i++) 
     if (strcmp(vars[i].name, n) == 0) { vars[i].use = 1; return; }
   vars = realloc(vars, sizeof(Var) * (nvars + 1));
@@ -119,6 +140,14 @@ void call_lab(char *n) {
     if (strcmp(labels[i].name, n) == 0) { labels[i].call = 1; return; }
   labels = realloc(labels, sizeof(Lab) * (nlabels + 1));
   labels[nlabels++] = (Lab){strdup(n), 0, 1};
+}
+
+void init_sensors_debug() {
+    printf("Sensores registrados: ");
+    for (int i = 0; supported_sensors[i] != NULL; i++) {
+        printf("%s ", supported_sensors[i]);
+    }
+    printf("\n");
 }
 
 void check_sintatics() {
@@ -159,7 +188,7 @@ void check_sintatics() {
 }
 
 
-#line 163 "parser.c"
+#line 192 "parser.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -644,12 +673,12 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,   114,   114,   116,   120,   121,   125,   126,   127,   128,
-     129,   130,   131,   132,   135,   136,   137,   140,   144,   147,
-     149,   150,   153,   155,   158,   158,   158,   158,   158,   158,
-     161,   161,   161,   161,   161,   161,   162,   162,   162,   163,
-     163,   163,   164,   164,   168,   169,   173,   174,   175,   179,
-     180,   181,   185,   186,   187,   188,   189,   190,   191
+       0,   143,   143,   145,   149,   150,   154,   155,   156,   157,
+     158,   159,   160,   161,   164,   165,   166,   169,   173,   176,
+     178,   179,   182,   184,   187,   187,   187,   187,   187,   187,
+     190,   190,   190,   190,   190,   190,   191,   191,   191,   192,
+     192,   192,   193,   193,   197,   198,   202,   203,   204,   208,
+     209,   210,   214,   215,   216,   217,   218,   219,   220
 };
 #endif
 
@@ -1280,31 +1309,31 @@ yyreduce:
   switch (yyn)
     {
   case 14: /* label_def: IDENT ':'  */
-#line 135 "parser.y"
+#line 164 "parser.y"
                      { def_lab((yyvsp[-1].str)); }
-#line 1286 "parser.c"
+#line 1315 "parser.c"
     break;
 
   case 15: /* assignment: IDENT '=' expr  */
-#line 136 "parser.y"
+#line 165 "parser.y"
                            { def_var((yyvsp[-2].str)); }
-#line 1292 "parser.c"
+#line 1321 "parser.c"
     break;
 
   case 16: /* call_stmt: CALL IDENT  */
-#line 137 "parser.y"
+#line 166 "parser.y"
                       { call_lab((yyvsp[0].str)); }
-#line 1298 "parser.c"
+#line 1327 "parser.c"
     break;
 
   case 54: /* factor: IDENT  */
-#line 187 "parser.y"
+#line 216 "parser.y"
           { use_var((yyvsp[0].str)); }
-#line 1304 "parser.c"
+#line 1333 "parser.c"
     break;
 
 
-#line 1308 "parser.c"
+#line 1337 "parser.c"
 
       default: break;
     }
@@ -1497,7 +1526,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 194 "parser.y"
+#line 223 "parser.y"
 
 
 void yyerror(const char *s) {
@@ -1522,6 +1551,9 @@ void yyerror(const char *s) {
 int main() {
   printf("Parser Smartwatch - Análise Sintatica\n");
   printf("======================================\n\n");
+  
+  // Debug dos sensores (opcional)
+  init_sensors_debug();
   
   if (yyparse() == 0) {
     printf("✓ Parsing OK\n");

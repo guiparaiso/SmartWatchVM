@@ -8,6 +8,9 @@ OP_POP = 0x02       # POP              - desempilha
 OP_LOAD = 0x03      # LOAD <var_idx>   - carrega variável
 OP_STORE = 0x04     # STORE <var_idx>  - armazena em variável
 
+# === SENSORES (READONLY) ===
+OP_LOAD_SENSOR = 0x05  # LOAD_SENSOR <sensor_idx> - lê sensor
+
 # === OPERAÇÕES ARITMÉTICAS ===
 OP_ADD = 0x10       # ADD              - soma (pop 2, push resultado)
 OP_SUB = 0x11       # SUB              - subtração
@@ -22,7 +25,7 @@ OP_POS = 52   # Valor positivo (+)
 # === OPERAÇÕES DE COMPARAÇÃO ===
 OP_EQ = 0x20        # EQ               - ==
 OP_NEQ = 0x21       # NEQ              - !=
-OP_LT = 0x22        # LT               - <
+OP_LT = 0x22        # LT               - 
 OP_LE = 0x23        # LE               - <=
 OP_GT = 0x24        # GT               - >
 OP_GE = 0x25        # GE               - >=
@@ -48,7 +51,25 @@ OP_MUSICPLAY = 0x4A # MUSICPLAY <string_idx>
 OP_MUSICSTOP = 0x4B
 OP_BLUETOOTH_ON = 0x4C
 OP_BLUETOOTH_OFF = 0x4D
+
 OP_HALT = 0xFF      # HALT             - para execução
+
+# 🆕 MAPA DE SENSORES
+SENSOR_HEARTRATE = 0
+SENSOR_STEPS = 1
+SENSOR_BATTERY = 2
+SENSOR_TIME_HOUR = 3
+SENSOR_TIME_MINUTE = 4
+SENSOR_TIME_SECOND = 5
+
+SENSOR_NAMES = {
+    SENSOR_HEARTRATE: "HEARTRATE",
+    SENSOR_STEPS: "STEPS",
+    SENSOR_BATTERY: "BATTERY",
+    SENSOR_TIME_HOUR: "TIME_HOUR",
+    SENSOR_TIME_MINUTE: "TIME_MINUTE",
+    SENSOR_TIME_SECOND: "TIME_SECOND",
+}
 
 # Dicionário para debug (nome da instrução)
 OPCODE_NAMES = {
@@ -56,10 +77,14 @@ OPCODE_NAMES = {
     OP_POP: "POP",
     OP_LOAD: "LOAD",
     OP_STORE: "STORE",
+    OP_LOAD_SENSOR: "LOAD_SENSOR",  # 🆕 ADICIONE AQUI
     OP_ADD: "ADD",
     OP_SUB: "SUB",
     OP_MUL: "MUL",
     OP_DIV: "DIV",
+    OP_NEG: "NEG",
+    OP_NOT: "NOT",
+    OP_POS: "POS",
     OP_EQ: "EQ",
     OP_NEQ: "NEQ",
     OP_LT: "LT",
@@ -102,14 +127,18 @@ def disassemble(bytecode, strings=None):
         name = OPCODE_NAMES.get(opcode, f"UNKNOWN({opcode:02x})")
         
         # Instruções com operandos
-        if opcode in [OP_PUSH, OP_LOAD, OP_STORE, OP_JMP, OP_JZ, OP_CALL,
+        if opcode in [OP_PUSH, OP_LOAD, OP_STORE, OP_LOAD_SENSOR, OP_JMP, OP_JZ, OP_CALL,
                       OP_SETTIME, OP_SETALARM, OP_NOTIFY, OP_MUSICPLAY]:
             if pc < len(bytecode):
                 operand = bytecode[pc]
                 pc += 1
                 
+                # 🆕 Se for sensor, mostra o nome
+                if opcode == OP_LOAD_SENSOR:
+                    sensor_name = SENSOR_NAMES.get(operand, f"UNKNOWN({operand})")
+                    lines.append(f"{addr:04d}: {name:15s} {operand:5d}  ; {sensor_name}")
                 # Se for índice de string, mostra a string
-                if opcode in [OP_SETTIME, OP_SETALARM, OP_NOTIFY, OP_MUSICPLAY] and strings:
+                elif opcode in [OP_SETTIME, OP_SETALARM, OP_NOTIFY, OP_MUSICPLAY] and strings:
                     if 0 <= operand < len(strings):
                         lines.append(f"{addr:04d}: {name:15s} {operand:5d}  ; \"{strings[operand]}\"")
                     else:

@@ -3,7 +3,7 @@ compiler.py - Compilador que lê código fonte .sw e gera bytecode
 """
 
 import struct
-from bytecode import *
+from vm.bytecode import *
 
 class Compiler:
     def __init__(self):
@@ -257,7 +257,24 @@ class Compiler:
         print(f"🔍 [COMPILER] Compilando expressão: '{expr}'")
         
         expr = expr.strip()
+
+        normalized = ""
+        in_string = False
         
+        for i, char in enumerate(expr):
+            if char == '"':
+                in_string = not in_string
+                normalized += char
+            elif in_string:
+                # Dentro de string, mantém tudo
+                normalized += char
+            elif char in [' ', '\t']:
+                # Fora de string, ignora espaços
+                continue
+            else:
+                normalized += char
+        
+        expr = normalized        
         # 1. STRING
         if expr.startswith('"') and expr.endswith('"'):
             string_val = expr[1:-1]
@@ -277,18 +294,83 @@ class Compiler:
                     inner = expr[1:i]
                     remaining = expr[i+1:].strip()
                     print(f"  ✅ PARÊNTESES: ({inner}), resto: '{remaining}'")
+                    
+                    # Se não tem resto, só compila o conteúdo
+                    if not remaining:
+                        self._compile_expression(inner)
+                        return
+                    
+                    # Compila o conteúdo dos parênteses
                     self._compile_expression(inner)
-                    if remaining:
-                        # Processa resto como nova expressão binária
-                        for j, op in enumerate(remaining):
-                            if op in ['+', '-', '*', '/']:
-                                right = remaining[j+1:].strip()
-                                self._compile_expression(right)
-                                if op == '+': self.emit(OP_ADD)
-                                elif op == '-': self.emit(OP_SUB)
-                                elif op == '*': self.emit(OP_MUL)
-                                elif op == '/': self.emit(OP_DIV)
-                                return
+                    
+                    # Agora precisamos processar o remaining respeitando precedência
+                    # Ex: "* 2 - 5" → deve fazer (result * 2) - 5
+                    
+                    # Remove espaços e primeiro operador se existir
+                    if remaining and remaining[0] in [' ', '\t']:
+                        remaining = remaining.strip()
+                    
+                    # Procura operador de MENOR precedência no remaining (+ ou -)
+                    depth_r = 0
+                    lowest_op_pos = -1
+                    
+                    for j in range(len(remaining)):
+                        if remaining[j] == '(': depth_r += 1
+                        elif remaining[j] == ')': depth_r -= 1
+                        elif depth_r == 0 and remaining[j] in ['+', '-']:
+                            # Verifica se não é operador unário
+                            if j > 0 and remaining[j-1] not in ['+', '-', '*', '/', '(', ' ']:
+                                lowest_op_pos = j
+                                # NÃO break! Queremos o ÚLTIMO de menor precedência
+                    
+                    if lowest_op_pos != -1:
+                        # Encontrou + ou - → divide lá
+                        left_remaining = remaining[:lowest_op_pos].strip()
+                        op = remaining[lowest_op_pos]
+                        right_remaining = remaining[lowest_op_pos+1:].strip()
+                        
+                        print(f"  🔹 Dividindo em: '{left_remaining}' {op} '{right_remaining}'")
+                        
+                        # Processa a parte esquerda (ex: "* 2")
+                        # Já temos resultado dos parênteses na pilha
+                        if left_remaining and left_remaining[0] in ['*', '/']:
+                            op_left = left_remaining[0]
+                            operand_left = left_remaining[1:].strip()
+                            self._compile_expression(operand_left)
+                            if op_left == '*': self.emit(OP_MUL)
+                            elif op_left == '/': self.emit(OP_DIV)
+                        elif left_remaining and left_remaining[0] in ['+', '-']:
+                            op_left = left_remaining[0]
+                            operand_left = left_remaining[1:].strip()
+                            self._compile_expression(operand_left)
+                            if op_left == '+': self.emit(OP_ADD)
+                            elif op_left == '-': self.emit(OP_SUB)
+                        elif left_remaining:
+                            # Caso seja algo como "2" sozinho
+                            self._compile_expression(left_remaining)
+                            self.emit(OP_MUL)  # Multiplicação implícita?
+                        
+                        # Agora processa a parte direita
+                        self._compile_expression(right_remaining)
+                        
+                        # Aplica o operador de menor precedência
+                        if op == '+': self.emit(OP_ADD)
+                        elif op == '-': self.emit(OP_SUB)
+                        
+                        return
+                    
+                    # Se não encontrou + ou -, procura * ou / (maior precedência)
+                    if remaining and remaining[0] in ['*', '/']:
+                        op_char = remaining[0]
+                        rest_expr = remaining[1:].strip()
+                        
+                        # Compila o operando
+                        self._compile_expression(rest_expr)
+                        
+                        # Aplica o operador
+                        if op_char == '*': self.emit(OP_MUL)
+                        elif op_char == '/': self.emit(OP_DIV)
+                        
                     return
         
         # 3. COMPARADORES
@@ -320,6 +402,21 @@ class Compiler:
         
         # 5. VARIÁVEL
         if expr.isidentifier():
+            sensor_map = {
+                'HEARTRATE': SENSOR_HEARTRATE,
+                'STEPS': SENSOR_STEPS,
+                'BATTERY': SENSOR_BATTERY,
+                'TIME_HOUR': SENSOR_TIME_HOUR,
+                'TIME_MINUTE': SENSOR_TIME_MINUTE,
+                'TIME_SECOND': SENSOR_TIME_SECOND,
+            }
+    
+            if expr in sensor_map:
+                sensor_idx = sensor_map[expr]
+                print(f"  ✅ SENSOR: '{expr}' -> LOAD_SENSOR {sensor_idx}")
+                self.emit(OP_LOAD_SENSOR, sensor_idx)
+                return
+            
             var_idx = self.get_var_index(expr)
             print(f"  ✅ VARIÁVEL: '{expr}' -> LOAD {var_idx}")
             self.emit(OP_LOAD, var_idx)

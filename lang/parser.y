@@ -22,6 +22,21 @@ typedef struct { char *name; int def; int call; } Lab;
 Lab *labels = NULL;
 int nlabels = 0;
 
+/* Lista de sensores suportados (readonly) */
+char *supported_sensors[] = {
+    "HEARTRATE", "STEPS", "BATTERY", "TIME_HOUR", "TIME_MINUTE", "TIME_SECOND",
+    NULL
+};
+
+int is_sensor(char *name) {
+    for (int i = 0; supported_sensors[i] != NULL; i++) {
+        if (strcmp(supported_sensors[i], name) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 void def_var(char *n) {
   for (int i = 0; i < nvars; i++) 
     if (strcmp(vars[i].name, n) == 0) { vars[i].def = 1; return; }
@@ -30,6 +45,12 @@ void def_var(char *n) {
 }
 
 void use_var(char *n) {
+  // Sensores são sempre válidos e não precisam ser verificados
+  if (is_sensor(n)) {
+    return;
+  }
+  
+  // Variável normal - verificação original
   for (int i = 0; i < nvars; i++) 
     if (strcmp(vars[i].name, n) == 0) { vars[i].use = 1; return; }
   vars = realloc(vars, sizeof(Var) * (nvars + 1));
@@ -51,6 +72,14 @@ void call_lab(char *n) {
     if (strcmp(labels[i].name, n) == 0) { labels[i].call = 1; return; }
   labels = realloc(labels, sizeof(Lab) * (nlabels + 1));
   labels[nlabels++] = (Lab){strdup(n), 0, 1};
+}
+
+void init_sensors_debug() {
+    printf("Sensores registrados: ");
+    for (int i = 0; supported_sensors[i] != NULL; i++) {
+        printf("%s ", supported_sensors[i]);
+    }
+    printf("\n");
 }
 
 void check_sintatics() {
@@ -215,6 +244,9 @@ void yyerror(const char *s) {
 int main() {
   printf("Parser Smartwatch - Análise Sintatica\n");
   printf("======================================\n\n");
+  
+  // Debug dos sensores (opcional)
+  init_sensors_debug();
   
   if (yyparse() == 0) {
     printf("✓ Parsing OK\n");

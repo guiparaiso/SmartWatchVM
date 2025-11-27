@@ -7,9 +7,9 @@ Versão simplificada sem JSON
 import sys
 import subprocess
 import os
-from compiler import Compiler
-from vm import VM
-from bytecode import disassemble
+from vm.compiler import Compiler
+from vm.virt_m import VM
+from vm.bytecode import disassemble
 
 def compile_and_run(source_file, debug=False):
     """Pipeline completo: código fonte → bytecode → execução"""

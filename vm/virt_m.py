@@ -3,7 +3,7 @@ vm.py - SmartWatch Virtual Machine
 Executa bytecode gerado pelo compiler
 """
 
-from bytecode import *
+from vm.bytecode import *
 
 class VM:
     def __init__(self, bytecode, strings=None, num_vars=100):
@@ -14,6 +14,14 @@ class VM:
         self.vars = [0.0] * num_vars   # variáveis (inicializadas com 0)
         self.call_stack = []           # pilha de chamadas (para CALL/RET)
         self.halted = False
+        self.sensors = {
+            'HEARTRATE': 72,      # Batimentos por minuto
+            'STEPS': 0,           # Passos do dia
+            'BATTERY': 85,        # Bateria %
+            'TIME_HOUR': 14,      # Hora atual
+            'TIME_MINUTE': 30,    # Minuto atual
+            'TIME_SECOND': 0      # Segundo atual
+        }
 
     # No lugar de apenas empilhar 0/1, empilhe valores especiais:
 # Comparações empilham: 2000 (False) ou 2001 (True)
@@ -73,7 +81,20 @@ class VM:
             var_idx = self.bytecode[self.pc]
             self.pc += 1
             self.stack.append(self.vars[var_idx])
-        
+        elif opcode == OP_LOAD_SENSOR:
+            sensor_idx = self.bytecode[self.pc]
+            self.pc += 1
+            
+            sensor_map = ['HEARTRATE', 'STEPS', 'BATTERY', 'TIME_HOUR', 'TIME_MINUTE']
+            if sensor_idx < len(sensor_map):
+                sensor_name = sensor_map[sensor_idx]
+                value = self.sensors[sensor_name]
+                self.stack.append(value)
+                print(f"  📊 Sensor {sensor_name} = {value}")
+            else:
+                print(f"  ❌ Sensor inválido: {sensor_idx}")
+                self.stack.append(0)
+            
         elif opcode == OP_STORE:
             var_idx = self.bytecode[self.pc]
             self.pc += 1
@@ -170,7 +191,7 @@ class VM:
             self.pc += 1
             if self.stack:
                 condition = self.stack.pop()
-                if condition == 0:  # se falso, pula
+                if condition == 2000:  # se falso, pula
                     self.pc = addr
         
         elif opcode == OP_CALL:
