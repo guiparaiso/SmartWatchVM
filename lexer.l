@@ -16,6 +16,17 @@ WS [ \t\r]+
 STRING \"([^\"\\]|\\.)*\"
 
 %%
+[ \t]+   { /* skip completamente */ }
+"+"     { printf("[LEXER] OPERATOR: '+'\n"); return '+'; }
+"-"     { printf("[LEXER] OPERATOR: '-'\n"); return '-'; }
+"*"     { printf("[LEXER] OPERATOR: '*'\n"); return '*'; }
+"/"     { printf("[LEXER] OPERATOR: '/'\n"); return '/'; }
+
+{DIGIT}+ {
+    printf("[LEXER] NUMBER: '%s'\n", yytext);
+    yylval.num = atof(yytext);
+    return NUMBER;
+}
 
 "POWERON" { return POWERON; }
 "POWEROFF" { return POWEROFF; }
@@ -43,34 +54,24 @@ STRING \"([^\"\\]|\\.)*\"
 "OFF" { return OFF; }
 "SHOW" { return SHOW; }
 
-
-
-
-
 {TIME} {
-  yylval.str = strdup(yytext);
-  return TIME_TOK;
-  }
-
-[-]?{DIGIT}+ {
-  yylval.num = atof(yytext);
-  printf("[LEXER] Number: %s\n", yytext);  /* debug */
-  return NUMBER;
+    yylval.str = strdup(yytext);
+    return TIME_TOK;
 }
 
-
-\"([^\"\\]|\\.)*\" {
-  yylval.str = strdup(yytext);
-  return STRING;
+{STRING} {
+    yylval.str = strdup(yytext);
+    return STRING;
 }
+
 {ID} {
-  yylval.str = strdup(yytext);
-  return IDENT;
-  }
+    yylval.str = strdup(yytext);
+    return IDENT;
+}
 
-  [;#].* { /* skip comment */ }
-  {WS} { /* skip */ }
-\n { return '\n'; }  /* ao invés de skip */
+[;#].* { /* skip comment */ }
+{WS} { /* skip */ }
+\n { return '\n'; }
 
 "=="    { printf("[LEXER] Token EQ: ==\n"); return EQ; }
 "!="    { printf("[LEXER] Token NEQ: !=\n"); return NEQ; }
@@ -78,15 +79,11 @@ STRING \"([^\"\\]|\\.)*\"
 ">="    { printf("[LEXER] Token GE: >=\n"); return GE; }
 "<"     { printf("[LEXER] Token LT: <\n"); return LT; }
 ">"     { printf("[LEXER] Token GT: >\n"); return GT; }
-"="     { printf("[LEXER] Token EQ: =\n"); return '='; }
 
-":" { return ':'; }
-"," { return ','; }
-"(" { return '('; }
-")" { return ')'; }
-"+" { return '+'; }
-"-" { return '-'; }
-"*" { return '*'; }
-"/" { return '/'; }
+"="     { return '='; }
+":"     { return ':'; }
+","     { return ','; }
+"("     { return '('; }
+")"     { return ')'; }
 
 %%

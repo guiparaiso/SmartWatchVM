@@ -107,6 +107,7 @@ void check_sintatics() {
 
 %left '+' '-'
 %left '*' '/'
+%right UMINUS UPLUS UNOT
 
 %%
 
@@ -185,12 +186,30 @@ factor:
   | STRING
   | IDENT { use_var($1); }
   | '(' expr ')'
+  | '-' factor %prec UMINUS
+  | '+' factor %prec UPLUS
+  | '!' factor %prec UNOT
   ;
 
 %%
 
 void yyerror(const char *s) {
-  fprintf(stderr, "Erro: %s (linha %d)\n", s, yylineno);
+  fprintf(stderr, "🚨 ERRO SINTÁTICO DETALHADO:\n");
+  fprintf(stderr, "   Mensagem: %s\n", s);
+  fprintf(stderr, "   Linha: %d\n", yylineno);
+  fprintf(stderr, "   Token atual: '%s'\n", yytext);
+  
+  // Mostra os últimos tokens para contexto
+  extern int yylex();
+  fprintf(stderr, "   Próximos tokens: ");
+  for (int i = 0; i < 3; i++) {
+    int token = yylex();
+    if (token == 0) break;
+    fprintf(stderr, "%d ", token);
+  }
+  fprintf(stderr, "\n");
+  
+  sintatic_errors++;
 }
 
 int main() {

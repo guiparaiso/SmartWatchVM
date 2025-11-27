@@ -88,7 +88,10 @@ extern int yydebug;
     CALL = 289,                    /* CALL  */
     RETURN = 290,                  /* RETURN  */
     ON = 291,                      /* ON  */
-    OFF = 292                      /* OFF  */
+    OFF = 292,                     /* OFF  */
+    UMINUS = 293,                  /* UMINUS  */
+    UPLUS = 294,                   /* UPLUS  */
+    UNOT = 295                     /* UNOT  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -102,7 +105,7 @@ union YYSTYPE
   double num;
   char *str;
 
-#line 106 "parser.h"
+#line 109 "parser.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

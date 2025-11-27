@@ -167,12 +167,12 @@ class Compiler:
         self._compile_instruction(line)
         
     def _compile_expression(self, expr):
-        """Compila uma expressão matemática completa com comparadores"""
+        """Compila uma expressão matemática completa"""
         print(f"🔍 [COMPILER] Compilando expressão: '{expr}'")
         
         expr = expr.strip()
         
-        # 1. STRINGS PRIMEIRO
+        # 1. STRING
         if expr.startswith('"') and expr.endswith('"'):
             string_val = expr[1:-1]
             str_idx = self.get_string_index(string_val)
@@ -180,27 +180,41 @@ class Compiler:
             print(f"  ✅ STRING: '{string_val}' -> offset {string_offset}")
             self.emit(OP_PUSH, string_offset)
             return
-
+        
         # 2. PARÊNTESES
-        if expr.startswith('(') and expr.endswith(')'):
-            inner = expr[1:-1].strip()
-            print(f"  ✅ PARÊNTESES: ({inner})")
-            self._compile_expression(inner)
-            return
+        if expr.startswith('('):
+            depth = 1
+            for i in range(1, len(expr)):
+                if expr[i] == '(': depth += 1
+                elif expr[i] == ')': depth -= 1
+                if depth == 0:
+                    inner = expr[1:i]
+                    remaining = expr[i+1:].strip()
+                    print(f"  ✅ PARÊNTESES: ({inner}), resto: '{remaining}'")
+                    self._compile_expression(inner)
+                    if remaining:
+                        # Processa resto como nova expressão binária
+                        for j, op in enumerate(remaining):
+                            if op in ['+', '-', '*', '/']:
+                                right = remaining[j+1:].strip()
+                                self._compile_expression(right)
+                                if op == '+': self.emit(OP_ADD)
+                                elif op == '-': self.emit(OP_SUB)
+                                elif op == '*': self.emit(OP_MUL)
+                                elif op == '/': self.emit(OP_DIV)
+                                return
+                    return
         
-        # 🆕 3. COMPARADORES (ANTES DOS UNÁRIOS!)
+        # 3. COMPARADORES
         comparators = ['>=', '<=', '==', '!=', '>', '<']
-        
         for comp in comparators:
             pos = expr.find(comp)
             if pos != -1:
                 left = expr[:pos].strip()
                 right = expr[pos + len(comp):].strip()
                 print(f"  ✅ Comparador '{comp}': left='{left}', right='{right}'")
-                
                 self._compile_expression(left)
                 self._compile_expression(right)
-                
                 if comp == '==': self.emit(OP_EQ)
                 elif comp == '!=': self.emit(OP_NEQ)
                 elif comp == '<': self.emit(OP_LT)
@@ -209,26 +223,7 @@ class Compiler:
                 elif comp == '>=': self.emit(OP_GE)
                 return
         
-        # 4. OPERADORES UNÁRIOS (DEPOIS DOS COMPARADORES)
-        if expr.startswith('-') or expr.startswith('!') or expr.startswith('+'):
-            op = expr[0]
-            operand = expr[1:].strip()
-            print(f"  ✅ OPERADOR UNÁRIO: '{op}' em '{operand}'")
-            
-            self._compile_expression(operand)
-            
-            if op == '-':
-                self.emit(OP_NEG)
-                print(f"  🔧 EMITIU OP_NEG")
-            elif op == '+':
-                self.emit(OP_POS)
-                print(f"  🔧 EMITIU OP_POS")
-            elif op == '!':
-                self.emit(OP_NOT)
-                print(f"  🔧 EMITIU OP_NOT")
-            return
-        
-        # 5. NÚMEROS
+        # 4. NÚMERO
         try:
             value = int(expr)
             print(f"  ✅ NÚMERO: '{expr}' -> PUSH {value}")
@@ -237,60 +232,113 @@ class Compiler:
         except ValueError:
             pass
         
-        # 6. VARIÁVEIS
+        # 5. VARIÁVEL
         if expr.isidentifier():
             var_idx = self.get_var_index(expr)
             print(f"  ✅ VARIÁVEL: '{expr}' -> LOAD {var_idx}")
             self.emit(OP_LOAD, var_idx)
             return
         
-    # 7. OPERAÇÕES ARITMÉTICAS
-    # ... resto do código igual ...
-        
-        # 6. OPERAÇÕES ARITMÉTICAS
-        operators = ['+', '-', '*', '/']
-        print(f"   Procurando operadores: {operators}")
-        
-        # Procura + e - (da direita para esquerda)
-        for i in range(len(expr)-1, -1, -1):
-            if expr[i] in ['+', '-']:
-                # Verifica se é operador binário (não unário)
-                if i == 0:
-                    continue
-                if expr[i-1] in ['+', '-', '*', '/', '=', '!', '<', '>']:
-                    continue
-                    
-                left = expr[:i].strip()
-                right = expr[i+1:].strip()
-                print(f"  ✅ Operador binário '{expr[i]}': left='{left}', right='{right}'")
-                
-                self._compile_expression(left)
+        # 6. OPERADOR UNÁRIO no início
+        if expr[0] in ['-', '+']:
+            # Encontra onde termina o operando do unário
+            i = 0
+            while i < len(expr) and expr[i] in ['-', '+']:
+                i += 1
+            
+            # Agora procura o fim do operando (até próximo operador binário)
+            depth = 0
+            operand_end = len(expr)
+            
+            for j in range(i, len(expr)):
+                if expr[j] == '(': 
+                    depth += 1
+                elif expr[j] == ')': 
+                    depth -= 1
+                elif depth == 0 and expr[j] in ['+', '-', '*', '/']:
+                    # Encontrou operador binário
+                    operand_end = j
+                    break
+            
+            unary_part = expr[:i]
+            operand = expr[i:operand_end].strip()
+            remaining = expr[operand_end:].strip()
+            
+            print(f"  ✅ UNÁRIO: '{unary_part}' em '{operand}', resto: '{remaining}'")
+            
+            # Compila o operando
+            self._compile_expression(operand)
+            
+            # Aplica negação se necessário
+            if unary_part.count('-') % 2 == 1:
+                self.emit(OP_PUSH, -1)
+                self.emit(OP_MUL)
+            
+            # Se tem resto, processa como binário
+            if remaining:
+                op = remaining[0]
+                right = remaining[1:].strip()
                 self._compile_expression(right)
-                
-                if expr[i] == '+': 
-                    self.emit(OP_ADD)
-                elif expr[i] == '-': 
-                    self.emit(OP_SUB)
-                return
+                if op == '+': self.emit(OP_ADD)
+                elif op == '-': self.emit(OP_SUB)
+                elif op == '*': self.emit(OP_MUL)
+                elif op == '/': self.emit(OP_DIV)
+            
+            return
         
-        # Procura * e /
-        for i in range(len(expr)-1, -1, -1):
-            if expr[i] in ['*', '/']:
-                left = expr[:i].strip()
-                right = expr[i+1:].strip()
-                print(f"  ✅ Operador '{expr[i]}': left='{left}', right='{right}'")
+        # 7. OPERADORES BINÁRIOS
+        # Procura + e - (menor precedência) - ÚLTIMO da esquerda para direita
+        depth = 0
+        last_add_sub = -1
+
+        for i in range(len(expr)):
+            if expr[i] == '(': depth += 1
+            elif expr[i] == ')': depth -= 1
+            
+            if depth == 0 and expr[i] in ['+', '-']:
+                # Verifica se não é unário
+                if i > 0:
+                    before = expr[:i].rstrip()
+                    if before and before[-1] not in ['+', '-', '*', '/', '(']:
+                        last_add_sub = i  # Atualiza sempre = pega o ÚLTIMO
+
+        if last_add_sub != -1:
+            op = expr[last_add_sub]
+            left = expr[:last_add_sub].strip()
+            right = expr[last_add_sub+1:].strip()
+            print(f"  ✅ Binário '{op}': left='{left}', right='{right}'")
+            self._compile_expression(left)
+            self._compile_expression(right)
+            if op == '+': self.emit(OP_ADD)
+            else: self.emit(OP_SUB)
+            return
+
+        # Procura * e / (maior precedência) - ÚLTIMO
+        depth = 0
+        last_mul_div = -1
+
+        for i in range(len(expr)):
+            if expr[i] == '(': depth += 1
+            elif expr[i] == ')': depth -= 1
+            
+            if depth == 0 and expr[i] in ['*', '/']:
+                if i > 0:
+                    before = expr[:i].rstrip()
+                    if before and before[-1] not in ['+', '-', '*', '/', '(']:
+                        last_mul_div = i  # Pega o ÚLTIMO
+
+        if last_mul_div != -1:
+            op = expr[last_mul_div]
+            left = expr[:last_mul_div].strip()
+            right = expr[last_mul_div+1:].strip()
+            print(f"  ✅ Binário '{op}': left='{left}', right='{right}'")
+            self._compile_expression(left)
+            self._compile_expression(right)
+            if op == '*': self.emit(OP_MUL)
+            else: self.emit(OP_DIV)
+            return
                 
-                self._compile_expression(left)
-                self._compile_expression(right)
-                
-                if expr[i] == '*': 
-                    self.emit(OP_MUL)
-                elif expr[i] == '/': 
-                    self.emit(OP_DIV)
-                return
-        
-        
-        # 8. NÃO RECONHECIDO
+        # NÃO RECONHECIDO
         print(f"  ❌ EXPRESSÃO NÃO RECONHECIDA: '{expr}'")
         self.emit(OP_PUSH, 0)
 
